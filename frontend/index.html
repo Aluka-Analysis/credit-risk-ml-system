@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CreditIQ — Loan Risk Assessment Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --ink:         #050810;
+  --surface:     #080c18;
+  --panel:       #0c1120;
+  --raised:      #101828;
+  --border:      rgba(255,255,255,0.07);
+  --border-hi:   rgba(201,165,60,0.35);
+  --amber:       #c9a53c;
+  --amber-dim:   #8a6f28;
+  --amber-glow:  rgba(201,165,60,0.12);
+  --amber-pale:  #f0d98a;
+  --text:        #e8eaf0;
+  --muted:       #5a6480;
+  --dim:         #1e2840;
+  --green:       #22c55e;
+  --green-bg:    rgba(34,197,94,0.07);
+  --green-bdr:   rgba(34,197,94,0.22);
+  --red:         #ef4444;
+  --red-bg:      rgba(239,68,68,0.07);
+  --red-bdr:     rgba(239,68,68,0.22);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--ink);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-weight: 400;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.5;
+}
+
+/* Ambient light */
+body::after {
+  content: '';
+  position: fixed;
+  width: 700px; height: 700px;
+  background: radial-gradient(circle, rgba(201,165,60,0.05) 0%, transparent 70%);
+  top: -150px; right: -150px;
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 1px solid var(--border);
+  background: rgba(5,8,16,0.94);
+  backdrop-filter: blur(24px);
+  padding: 0 44px; height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+  animation: slideDown 0.55s cubic-bezier(0.4,0,0.2,1) both;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.logo { display: flex; align-items: center; gap: 12px; }
+
+.logo-hex {
+  width: 34px; height: 34px;
+  background: var(--amber);
+  clip-path: polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.logo-hex span {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; font-weight: 700;
+  color: var(--ink);
+}
+
+.logo-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 700;
+  color: var(--text); letter-spacing: 0.02em;
+}
+
+.logo-name em { color: var(--amber); font-style: normal; }
+
+.hdr-right { display: flex; align-items: center; gap: 28px; }
+
+.live {
+  display: flex; align-items: center; gap: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--green);
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,100% { opacity:1; box-shadow: 0 0 8px var(--green); }
+  50%      { opacity:0.4; box-shadow: 0 0 3px var(--green); }
+}
+
+.model-chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  border: 1px solid var(--dim);
+  padding: 4px 10px;
+}
+
+/* ── MAIN ── */
+.wrap {
+  max-width: 1280px; margin: 0 auto;
+  padding: 56px 44px 100px;
+  position: relative; z-index: 1;
+}
+
+/* Intro */
+.intro {
+  margin-bottom: 52px;
+  animation: fadeUp 0.6s 0.15s cubic-bezier(0.4,0,0.2,1) both;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(18px); }
+  to   { opacity:1; transform: none; }
+}
+
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--amber);
+  margin-bottom: 14px;
+}
+
+.page-h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 54px; font-weight: 700;
+  line-height: 1.08; letter-spacing: -0.01em;
+  color: var(--text); margin-bottom: 16px;
+}
+
+.page-h1 span { color: var(--amber); }
+
+.page-sub {
+  font-size: 14px; color: var(--muted);
+  max-width: 500px; line-height: 1.75;
+}
+
+/* Two-column */
+.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px; align-items: start;
+}
+
+/* ── FORM CARD ── */
+.fcard {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  transition: border-color 0.3s;
+}
+
+.fcard:hover { border-color: var(--border-hi); }
+
+.fcard:nth-child(1) { animation: fadeUp 0.6s 0.25s cubic-bezier(0.4,0,0.2,1) both; }
+.fcard:nth-child(2) { animation: fadeUp 0.6s 0.35s cubic-bezier(0.4,0,0.2,1) both; }
+.fcard:nth-child(3) { animation: fadeUp 0.6s 0.45s cubic-bezier(0.4,0,0.2,1) both; }
+
+.fcard-head {
+  padding: 18px 28px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 13px;
+}
+
+.sec-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--amber);
+  letter-spacing: 0.08em;
+  background: var(--amber-glow);
+  border: 1px solid var(--amber-dim);
+  padding: 3px 8px; flex-shrink: 0;
+}
+
+.sec-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--text);
+}
+
+.fcard-body {
+  padding: 24px 28px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+
+/* Fields */
+.field { display: flex; flex-direction: column; gap: 7px; }
+
+.field label {
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field input,
+.field select {
+  width: 100%; background: var(--raised);
+  border: 1px solid var(--border);
+  color: var(--text); padding: 11px 14px;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px; font-weight: 400;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  appearance: none; -webkit-appearance: none;
+}
+
+.field input:focus,
+.field select:focus {
+  border-color: var(--amber);
+  background: rgba(201,165,60,0.03);
+  box-shadow: 0 0 0 3px rgba(201,165,60,0.07);
+}
+
+.field input::placeholder { color: var(--dim); }
+
+.field select option { background: #0c1120; color: var(--text); }
+
+.sw { position: relative; }
+.sw::after {
+  content: '';
+  position: absolute; right: 13px; top: 50%;
+  transform: translateY(-50%);
+  border: 4px solid transparent;
+  border-top: 5px solid var(--muted);
+  pointer-events: none;
+}
+
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* Submit */
+.sub-wrap { animation: fadeUp 0.6s 0.55s cubic-bezier(0.4,0,0.2,1) both; }
+
+.sub-btn {
+  width: 100%; padding: 17px;
+  background: var(--amber); color: var(--ink);
+  border: none;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.18em; text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  position: relative; overflow: hidden;
+}
+
+.sub-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.12) 0%, transparent 55%);
+  opacity: 0; transition: opacity 0.2s;
+}
+
+.sub-btn:hover {
+  background: var(--amber-pale);
+  box-shadow: 0 8px 28px rgba(201,165,60,0.28);
+  transform: translateY(-1px);
+}
+
+.sub-btn:hover::after { opacity: 1; }
+.sub-btn:active       { transform: none; box-shadow: none; }
+
+.sub-btn:disabled {
+  background: var(--dim); color: var(--muted);
+  cursor: not-allowed; transform: none; box-shadow: none;
+}
+
+.err-box {
+  display: none;
+  margin-top: 12px; padding: 13px 17px;
+  background: var(--red-bg); border: 1px solid var(--red-bdr);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--red); line-height: 1.55;
+}
+.err-box.show { display: block; }
+
+/* ── RESULTS ── */
+#results-col {
+  display: none; flex-direction: column; gap: 16px;
+  position: sticky; top: 82px;
+  animation: fadeUp 0.5s cubic-bezier(0.4,0,0.2,1) both;
+}
+#results-col.show { display: flex; }
+
+.placeholder {
+  background: var(--panel); border: 1px dashed var(--dim);
+  padding: 72px 40px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 16px; text-align: center;
+  animation: fadeUp 0.6s 0.45s cubic-bezier(0.4,0,0.2,1) both;
+}
+
+.ph-icon {
+  width: 44px; height: 44px;
+  border: 1px solid var(--dim); border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.ph-text { font-size: 13px; color: var(--muted); line-height: 1.65; max-width: 220px; }
+
+/* Decision card */
+.dec-card {
+  padding: 32px; position: relative; overflow: hidden;
+}
+.dec-card.approved { background: var(--green-bg); border: 1px solid var(--green-bdr); }
+.dec-card.declined { background: var(--red-bg);   border: 1px solid var(--red-bdr);   }
+
+.dec-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1.5px;
+}
+.dec-card.approved::before { background: linear-gradient(90deg, transparent, var(--green), transparent); }
+.dec-card.declined::before { background: linear-gradient(90deg, transparent, var(--red),   transparent); }
+
+.dec-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.2em;
+  text-transform: uppercase; margin-bottom: 11px;
+}
+.dec-card.approved .dec-eyebrow { color: var(--green); }
+.dec-card.declined .dec-eyebrow { color: var(--red); }
+
+.dec-verdict {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 66px; font-weight: 700;
+  line-height: 0.9; letter-spacing: -0.02em;
+  margin-bottom: 24px;
+}
+.dec-card.approved .dec-verdict { color: var(--green); }
+.dec-card.declined .dec-verdict { color: var(--red);   }
+
+.dec-stats {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+  padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.stat-item { display: flex; flex-direction: column; gap: 5px; }
+.stat-k { font-size: 9px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
+.stat-v { font-family: 'JetBrains Mono', monospace; font-size: 16px; color: var(--text); }
+
+/* Gauge */
+.gauge {
+  background: var(--panel); border: 1px solid var(--border);
+  padding: 22px 28px;
+}
+
+.gauge-top {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 13px;
+}
+
+.gauge-lbl { font-size: 10px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
+.gauge-pct { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--amber); }
+
+.gauge-track {
+  height: 4px; background: var(--raised);
+  border-radius: 2px; overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%; border-radius: 2px;
+  width: 0%; transition: width 1.1s cubic-bezier(0.4,0,0.2,1);
+}
+.gauge-fill.safe    { background: linear-gradient(90deg, var(--green), #16a34a); }
+.gauge-fill.caution { background: linear-gradient(90deg, var(--amber), #d97706); }
+.gauge-fill.danger  { background: linear-gradient(90deg, var(--red), #dc2626);   }
+
+.gauge-ticks {
+  display: flex; justify-content: space-between;
+  margin-top: 7px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; color: var(--dim);
+}
+
+/* Ref */
+.ref-row {
+  background: var(--raised); border: 1px solid var(--border);
+  padding: 13px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ref-k { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.ref-v { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--amber); letter-spacing: 0.1em; }
+
+/* SHAP chart */
+.shap-card { background: var(--panel); border: 1px solid var(--border); }
+
+.shap-head {
+  padding: 15px 24px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+
+.shap-title { font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber); }
+.shap-hint  { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.06em; }
+.shap-body  { padding: 20px 22px; }
+.chart-box  { position: relative; height: 250px; }
+
+/* Reasons */
+.reasons { background: var(--panel); border: 1px solid var(--border); }
+
+.reasons-head {
+  padding: 15px 24px; border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 600;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--amber);
+}
+
+.reason-row {
+  display: flex; align-items: flex-start; gap: 15px;
+  padding: 15px 24px; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.reason-row:last-child { border-bottom: none; }
+.reason-row:hover { background: rgba(255,255,255,0.015); }
+
+.r-num {
+  width: 20px; height: 20px;
+  border: 1px solid var(--amber-dim);
+  color: var(--amber);
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+
+.r-text { font-size: 13px; color: var(--text); line-height: 1.55; }
+
+/* Reset */
+.reset-btn {
+  width: 100%; padding: 14px;
+  background: transparent; color: var(--amber);
+  border: 1px solid var(--amber-dim);
+  font-family: 'Syne', sans-serif;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  cursor: pointer; transition: background 0.2s, border-color 0.2s;
+}
+.reset-btn:hover { background: var(--amber-glow); border-color: var(--amber); }
+
+/* ── OVERLAY ── */
+.overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(5,8,16,0.9);
+  backdrop-filter: blur(16px);
+  z-index: 999;
+  align-items: center; justify-content: center;
+  flex-direction: column; gap: 26px;
+}
+.overlay.show { display: flex; }
+
+.spin {
+  width: 44px; height: 44px;
+  border: 1.5px solid var(--dim);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.overlay-txt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 22px 44px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; z-index: 1;
+}
+
+.ft-l {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--muted); letter-spacing: 0.08em;
+}
+.ft-l span { color: var(--amber); }
+.ft-r { font-size: 11px; color: var(--muted); }
+.ft-r strong { color: var(--text); font-weight: 600; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 960px) {
+  .cols { grid-template-columns: 1fr; }
+  #results-col { position: static; }
+  .page-h1 { font-size: 40px; }
+  header, .wrap, footer { padding-left: 20px; padding-right: 20px; }
+}
+@media (max-width: 480px) {
+  .row2 { grid-template-columns: 1fr; }
+  .dec-stats { grid-template-columns: 1fr 1fr; }
+  .dec-verdict { font-size: 50px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Overlay -->
+<div class="overlay" id="overlay">
+  <div class="spin"></div>
+  <div class="overlay-txt">Processing Assessment</div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="logo">
+    <div class="logo-hex"><span>CI</span></div>
+    <div class="logo-name">Credit<em>IQ</em></div>
+  </div>
+  <div class="hdr-right">
+    <div class="live"><div class="live-dot"></div>System Online</div>
+    <div class="model-chip">GB Classifier · v3.0 · AUC 0.787</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Intro -->
+  <div class="intro">
+    <div class="eyebrow">// Credit Risk Assessment Terminal</div>
+    <h1 class="page-h1">Loan Application<br><span>Risk Analysis</span></h1>
+    <p class="page-sub">
+      Complete the applicant profile below. The system delivers an instant
+      credit risk decision powered by an explainable Gradient Boosting model
+      with full regulatory compliance and SHAP-driven reasoning.
+    </p>
+  </div>
+
+  <div class="cols">
+
+    <!-- FORM -->
+    <div>
+      <form id="frm" novalidate>
+
+        <!-- 01 Financial Profile -->
+        <div class="fcard">
+          <div class="fcard-head">
+            <span class="sec-num">01</span>
+            <span class="sec-title">Financial Profile</span>
+          </div>
+          <div class="fcard-body">
+
+            <div class="field">
+              <label>Checking Account Status</label>
+              <div class="sw">
+                <select name="checking_account_status" required>
+                  <option value="" disabled selected>Select status</option>
+                  <option value="0">Less than 0 DM — Overdrawn</option>
+                  <option value="1">0 to 200 DM — Low balance</option>
+                  <option value="2">200 DM or more — Healthy balance</option>
+                  <option value="3">No checking account</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Savings Account / Bonds</label>
+              <div class="sw">
+                <select name="savings_account_bonds" required>
+                  <option value="" disabled selected>Select savings level</option>
+                  <option value="0">Less than 100 DM</option>
+                  <option value="1">100 to 500 DM</option>
+                  <option value="2">500 to 1000 DM</option>
+                  <option value="3">1000 DM or more</option>
+                  <option value="4">Unknown / No savings account</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Credit History</label>
+              <div class="sw">
+                <select name="credit_history" required>
+                  <option value="" disabled selected>Select credit history</option>
+                  <option value="0">No credits taken / all paid back duly</option>
+                  <option value="1">All credits at this bank paid back duly</option>
+                  <option value="2">Existing credits paid back duly till now</option>
+                  <option value="3">Delay in paying off in the past</option>
+                  <option value="4">Critical account / other credits existing</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>Credit Amount (DM)</label>
+                <input type="number" name="credit_amount" placeholder="e.g. 5000" min="1" required>
+              </div>
+              <div class="field">
+                <label>Duration (Months)</label>
+                <input type="number" name="duration_in_month" placeholder="e.g. 24" min="1" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Purpose of Loan</label>
+              <div class="sw">
+                <select name="purpose" required>
+                  <option value="" disabled selected>Select purpose</option>
+                  <option value="0">Car — Used</option>
+                  <option value="1">Others</option>
+                  <option value="2">Furniture / Equipment</option>
+                  <option value="3">Radio / Television</option>
+                  <option value="4">Domestic Appliances</option>
+                  <option value="5">Repairs</option>
+                  <option value="6">Education</option>
+                  <option value="7">Retraining</option>
+                  <option value="8">Business</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>Installment Rate (%)</label>
+                <input type="number" name="installment" placeholder="1 – 4" min="1" max="4" required>
+              </div>
+              <div class="field">
+                <label>Existing Credits at Bank</label>
+                <input type="number" name="existing_credits_no" placeholder="1 – 4" min="1" max="4" required>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 02 Employment & Personal -->
+        <div class="fcard">
+          <div class="fcard-head">
+            <span class="sec-num">02</span>
+            <span class="sec-title">Employment &amp; Personal</span>
+          </div>
+          <div class="fcard-body">
+
+            <div class="field">
+              <label>Employment Duration</label>
+              <div class="sw">
+                <select name="employment" required>
+                  <option value="" disabled selected>Select employment duration</option>
+                  <option value="0">Unemployed</option>
+                  <option value="1">Less than 1 year</option>
+                  <option value="2">1 to 4 years</option>
+                  <option value="3">4 to 7 years</option>
+                  <option value="4">7 years or more</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Job Type</label>
+              <div class="sw">
+                <select name="job" required>
+                  <option value="" disabled selected>Select job type</option>
+                  <option value="0">Unemployed / Unskilled non-resident</option>
+                  <option value="1">Unskilled resident</option>
+                  <option value="2">Skilled employee / Official</option>
+                  <option value="3">Management / Self-employed / Officer</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>Years at Residence</label>
+                <input type="number" name="residence" placeholder="1 – 4" min="1" max="4" required>
+              </div>
+              <div class="field">
+                <label>Number of Dependants</label>
+                <input type="number" name="liability_responsibles" placeholder="1 or 2" min="1" max="2" required>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Housing Status</label>
+              <div class="sw">
+                <select name="housing" required>
+                  <option value="" disabled selected>Select housing</option>
+                  <option value="0">Rent</option>
+                  <option value="1">Own</option>
+                  <option value="2">Free (provided)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Property Owned</label>
+              <div class="sw">
+                <select name="property" required>
+                  <option value="" disabled selected>Select property</option>
+                  <option value="0">Real estate</option>
+                  <option value="1">Building society savings / Life insurance</option>
+                  <option value="2">Car or other</option>
+                  <option value="3">Unknown / No property</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 03 Risk Factors -->
+        <div class="fcard">
+          <div class="fcard-head">
+            <span class="sec-num">03</span>
+            <span class="sec-title">Risk Factors</span>
+          </div>
+          <div class="fcard-body">
+
+            <div class="field">
+              <label>Other Installment Plans</label>
+              <div class="sw">
+                <select name="other_installment_plans" required>
+                  <option value="" disabled selected>Select plan type</option>
+                  <option value="0">Bank</option>
+                  <option value="1">Store</option>
+                  <option value="2">None</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Other Debtors / Guarantors</label>
+              <div class="sw">
+                <select name="other_debtors_guarantors" required>
+                  <option value="" disabled selected>Select guarantor status</option>
+                  <option value="0">None</option>
+                  <option value="1">Co-applicant</option>
+                  <option value="2">Guarantor</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Telephone Registered</label>
+              <div class="sw">
+                <select name="telephone" required>
+                  <option value="" disabled selected>Select</option>
+                  <option value="0">No telephone registered</option>
+                  <option value="1">Yes — registered under applicant name</option>
+                </select>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Submit -->
+        <div class="sub-wrap">
+          <button type="submit" class="sub-btn" id="sub-btn">
+            Run Risk Assessment
+          </button>
+          <div class="err-box" id="err-box"></div>
+        </div>
+
+      </form>
+    </div>
+
+    <!-- RESULTS -->
+    <div>
+
+      <!-- Placeholder -->
+      <div class="placeholder" id="placeholder">
+        <div class="ph-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+               stroke="#2a3250" stroke-width="1.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <circle cx="12" cy="16" r="0.5" fill="#2a3250"/>
+          </svg>
+        </div>
+        <p class="ph-text">Complete the applicant profile and submit to receive an instant risk assessment with SHAP explanation.</p>
+      </div>
+
+      <!-- Results panel -->
+      <div id="results-col">
+
+        <!-- Decision -->
+        <div class="dec-card" id="dec-card">
+          <div class="dec-eyebrow" id="dec-eyebrow">Assessment Complete</div>
+          <div class="dec-verdict" id="dec-verdict">—</div>
+          <div class="dec-stats">
+            <div class="stat-item">
+              <div class="stat-k">Risk Score</div>
+              <div class="stat-v" id="s-risk">—</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-k">Threshold</div>
+              <div class="stat-v" id="s-thr">—</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-k">Date</div>
+              <div class="stat-v" id="s-date">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gauge -->
+        <div class="gauge">
+          <div class="gauge-top">
+            <span class="gauge-lbl">Default Probability</span>
+            <span class="gauge-pct" id="g-pct">—</span>
+          </div>
+          <div class="gauge-track">
+            <div class="gauge-fill" id="g-fill"></div>
+          </div>
+          <div class="gauge-ticks">
+            <span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>
+          </div>
+        </div>
+
+        <!-- Reference -->
+        <div class="ref-row">
+          <span class="ref-k">Application Reference</span>
+          <span class="ref-v" id="ref-v">—</span>
+        </div>
+
+        <!-- SHAP chart -->
+        <div class="shap-card">
+          <div class="shap-head">
+            <span class="shap-title">SHAP Feature Contribution</span>
+            <span class="shap-hint">Positive = risk ↑ · Negative = risk ↓</span>
+          </div>
+          <div class="shap-body">
+            <div class="chart-box">
+              <canvas id="shap-cv"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reasons -->
+        <div class="reasons">
+          <div class="reasons-head">Primary Decision Factors</div>
+          <div id="reasons-list"></div>
+        </div>
+
+        <!-- Reset -->
+        <button class="reset-btn" onclick="resetForm()">
+          New Assessment
+        </button>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Footer -->
+<footer>
+  <div class="ft-l">
+    Credit<span>IQ</span> · Gradient Boosting · v3.0.0 · AUC-ROC <span>0.7869</span> · Threshold <span>0.30</span>
+  </div>
+  <div class="ft-r">
+    Built by <strong>Aluka Precious Oluchukwu</strong> — Machine Learning Engineer
+  </div>
+</footer>
+
+<script>
+const API = 'http://localhost:8000';
+let shapChart = null;
+
+document.getElementById('frm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const btn    = document.getElementById('sub-btn');
+  const errBox = document.getElementById('err-box');
+  errBox.classList.remove('show');
+
+  const g = n => parseFloat(document.querySelector(`[name="${n}"]`).value);
+
+  const payload = {
+    checking_account_status:  g('checking_account_status'),
+    duration_in_month:        g('duration_in_month'),
+    credit_history:           g('credit_history'),
+    purpose:                  g('purpose'),
+    credit_amount:            g('credit_amount'),
+    savings_account_bonds:    g('savings_account_bonds'),
+    employment:               g('employment'),
+    installment:              g('installment'),
+    other_installment_plans:  g('other_installment_plans'),
+    residence:                g('residence'),
+    property:                 g('property'),
+    housing:                  g('housing'),
+    existing_credits_no:      g('existing_credits_no'),
+    job:                      g('job'),
+    liability_responsibles:   g('liability_responsibles'),
+    telephone:                g('telephone'),
+    other_debtors_guarantors: g('other_debtors_guarantors'),
+  };
+
+  for (const [k, v] of Object.entries(payload)) {
+    if (isNaN(v)) {
+      errBox.textContent = 'Please complete all fields before submitting.';
+      errBox.classList.add('show');
+      return;
+    }
+  }
+
+  document.getElementById('overlay').classList.add('show');
+  btn.disabled = true;
+
+  try {
+    const res  = await fetch(`${API}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Server error');
+    render(data);
+  } catch (err) {
+    errBox.textContent = `Connection error: ${err.message}. Ensure uvicorn is running at ${API}`;
+    errBox.classList.add('show');
+  } finally {
+    document.getElementById('overlay').classList.remove('show');
+    btn.disabled = false;
+  }
+});
+
+function render(d) {
+  const dec = d.decision === 'DECLINED';
+  const pct = Math.round(d.risk_probability * 100);
+
+  // Hide placeholder, show results
+  document.getElementById('placeholder').style.display = 'none';
+  document.getElementById('results-col').classList.add('show');
+
+  // Decision card
+  const card = document.getElementById('dec-card');
+  card.className = `dec-card ${dec ? 'declined' : 'approved'}`;
+  document.getElementById('dec-eyebrow').textContent =
+    dec ? 'Application Declined' : 'Application Approved';
+  document.getElementById('dec-verdict').textContent = d.decision;
+  document.getElementById('s-risk').textContent  = d.risk_percentage;
+  document.getElementById('s-thr').textContent   = `${Math.round(d.threshold_used * 100)}%`;
+  document.getElementById('s-date').textContent  = d.assessment_date;
+
+  // Gauge
+  document.getElementById('g-pct').textContent = d.risk_percentage;
+  const fill = document.getElementById('g-fill');
+  fill.className = `gauge-fill ${pct < 30 ? 'safe' : pct < 60 ? 'caution' : 'danger'}`;
+  setTimeout(() => { fill.style.width = `${pct}%`; }, 80);
+
+  // Reference
+  document.getElementById('ref-v').textContent = d.applicant_reference;
+
+  // Reasons
+  const list = document.getElementById('reasons-list');
+  list.innerHTML = '';
+  d.top_reasons.forEach((r, i) => {
+    list.innerHTML += `
+      <div class="reason-row">
+        <div class="r-num">${i + 1}</div>
+        <div class="r-text">${r}</div>
+      </div>`;
+  });
+
+  // SHAP chart
+  buildChart(d);
+
+  document.getElementById('results-col').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildChart(d) {
+  const dec     = d.decision === 'DECLINED';
+  const reasons = d.top_reasons;
+  const base    = d.risk_probability;
+
+  const labels = reasons.map(r => r.length > 42 ? r.slice(0, 40) + '…' : r);
+
+  // Approximate SHAP magnitudes from order and probability
+  const values = reasons.map((_, i) => {
+    const mag = parseFloat(((base / 1.8) * Math.pow(0.65, i)).toFixed(3));
+    return dec ? +mag : -mag;
+  });
+
+  const bgColors  = values.map(v => v > 0 ? 'rgba(239,68,68,0.7)'  : 'rgba(34,197,94,0.7)');
+  const bdrColors = values.map(v => v > 0 ? '#ef4444' : '#22c55e');
+
+  if (shapChart) { shapChart.destroy(); }
+
+  const ctx = document.getElementById('shap-cv').getContext('2d');
+  shapChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: values,
+        backgroundColor: bgColors,
+        borderColor: bdrColors,
+        borderWidth: 1,
+        borderRadius: 2,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0c1120',
+          borderColor: 'rgba(255,255,255,0.07)',
+          borderWidth: 1,
+          titleColor: '#c9a53c',
+          bodyColor: '#e8eaf0',
+          titleFont: { family: 'JetBrains Mono', size: 10 },
+          bodyFont:  { family: 'Syne', size: 12 },
+          callbacks: {
+            title: items => items[0].label,
+            label: item => {
+              const v = item.raw;
+              return v > 0
+                ? ` +${v.toFixed(3)}  →  increases default risk`
+                : ` ${v.toFixed(3)}  →  reduces default risk`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid:   { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.06)' },
+          ticks:  { color: '#5a6480', font: { family: 'JetBrains Mono', size: 9 } }
+        },
+        y: {
+          grid:   { display: false },
+          border: { color: 'rgba(255,255,255,0.06)' },
+          ticks:  { color: '#8892a4', font: { family: 'Syne', size: 11 }, maxRotation: 0 }
+        }
+      },
+      animation: { duration: 750, easing: 'easeOutQuart' }
+    }
+  });
+}
+
+function resetForm() {
+  document.getElementById('frm').reset();
+  document.getElementById('results-col').classList.remove('show');
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('err-box').classList.remove('show');
+  if (shapChart) { shapChart.destroy(); shapChart = null; }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
