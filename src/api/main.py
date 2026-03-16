@@ -3,6 +3,8 @@
 # Credit Risk ML System — Phase 6
 # Author: Aluka Precious Oluchukwu
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
@@ -40,6 +42,14 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Serve frontend static files
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+@app.get("/")
+async def serve_frontend():
+    """Serve the bank officer frontend interface."""
+    return FileResponse("frontend/index.html")
 
 # ─── CORS Middleware ──────────────────────────────────────────
 # Allows frontend to communicate with API
