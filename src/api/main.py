@@ -8,12 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import uvicorn
 
-from schemas import (LoanApplication,
-                     PredictionResponse,
-                     HealthResponse,
-                     ModelInfoResponse)
-from predict import load_model, generate_prediction
-from adverse_action import generate_adverse_action_notice
+from src.api.schemas import (LoanApplication,
+                              PredictionResponse,
+                              HealthResponse,
+                              ModelInfoResponse)
+from src.api.predict import load_model, generate_prediction
+from src.api.adverse_action import generate_adverse_action_notice
 
 # ─── Initialise FastAPI app ───────────────────────────────────
 app = FastAPI(
