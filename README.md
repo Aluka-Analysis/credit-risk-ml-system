@@ -272,8 +272,8 @@ credit-risk-ml-system/
 ├── Dockerfile
 ├── docker-compose.yml
 └── requirements.txt
-```
 
+```
 ---
 
 # Business Impact
@@ -309,6 +309,9 @@ Potential production enhancements:
 • Cloud autoscaling deployment  
 
 ---
+"See MODEL_CARD.md for full 
+   model documentation and 
+   fairness analysis"
 
 # Author
 
