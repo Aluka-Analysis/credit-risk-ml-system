@@ -1,0 +1,17 @@
+# ─── docker-compose.yml ───────────────────────────────────────
+# Credit Risk ML System
+# Author: Aluka Precious Oluchukwu
+
+version: '3.8'
+
+services:
+  credit-risk-api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/app/models
+      - ./frontend:/app/frontend
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped
